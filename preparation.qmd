@@ -8,15 +8,211 @@ format: typst
 # Load necessary libraries:
 # ...
 library(tidyverse)
-library(arrow)
+library(readr)
+library(dplyr)
+
+# Load CSV to R.
+work_dir <- "/home/robot/rlab/er-visits/"
+setwd(work_dir)
+citbi <- read_csv("data/citbi.csv")
+
+spec(citbi)
 
 ```
 
-\
+
 
 ## Part I: Data Cleaning
 
+Address Missing Data:
+
+• How is missing data being represented? Hint: Look at the data dictionary.
+• Notice that some columns have a special 91 value that indicates a pre-verbal patients (children who
+haven’t started speaking yet), some columns have a 92 that could be speciﬁc to that variable.
 ```{r}
+# Regard 91 (PV/NV) and 92 as NA.  
+citbi_na <- read_csv("data/citbi.csv", na = c("91", "92", "NA"))
+
+
+```
+
+
+2. Change Variable Names:
+• Consider changing variable names. For example, names like “Clav” are unclear. A better name could
+be “clavicle_trauma”.
+
+```{r}
+citbi_ren <- citbi_na |>
+    rename(        
+        patient_number = PatNum,
+        amnesia_verb = Amnesia_verb,
+        duration_loss_of_consciousness = LocLen,
+        post_traumatic_seizure = Seiz,
+        duration_post_traumatic_seizure = SeizLen,
+        acting_normally = ActNorm,
+        headache_verb = HA_verb,
+        vomit = Vomit,
+        dizzy = Dizzy,
+        gcs_eye = GCSEye,
+        gcs_verb = GCSVerbal,
+        gcs_motor = GCSMotor,
+        gcs_total = GCSTotal,
+        altered_mental_status = AMS,
+        palpable_skull_fracture = SFxPalp,
+        fontanelle_bulging = FontBulg,
+        scalp_hematoma = Hema,
+        clavicle_trauma = Clav,
+        neuro_defect = NeuroD,
+        other_substantial_injure = OSI,
+        ct_form_filled = CTForm1,
+        age_in_month = AgeInMonth,
+        gender = Gender,
+        ct_done = CTDone,
+        death_due_to_tbi = DeathTBI,
+        citbi_final = PosIntFinal
+
+
+
+
+    )
+```
+3. Specify Variable Types:
+• Identify character, logical, and numeric vectors. Convert data types where appropriate.
+    * amnesia_verb : logical/character? 
+    * duration_loss_of_consciousness:  character
+    * post_traumatic_seizure: logical
+    * duration_post_traumatic_seizure:  character
+    * acting_normally : logical
+    * headache_verb  : logical
+    * vomit   : logical
+    * dizzy   : logical
+    * gcs_eye : Character
+    * gcs_verb : Character
+    * gcs_motor : Character    
+    * altered_mental_status   : logical
+    * palpable_skull_fracture  : Character
+    * fontanelle_bulging  : Character
+    * scalp_hematoma  : Logical
+    * clavicle_trauma : Logical                
+    * neuro_defect  : Logical
+    * other_substantial_injure   : Logical
+    * ct_form_filled : Logical    
+    * gender : Character                          
+    * ct_done : Logical
+    * death_due_to_tbi  : Logical
+    * citbi_final : Logical
+
+
+
+
+• Consider converting character vectors to factors.
+
+
+```{r}
+citbi_update <- citbi_ren |>
+    mutate(
+        amnesia_verb = recode(
+            amnesia_verb,
+            `0` = "No",
+            `1` = "Yes",
+            `91` = "Pre-verbal/Non-verbal",
+            .default = NA_character_,
+            .missing = NA_character_
+        ),        
+        duration_loss_of_consciousness = recode(
+            duration_loss_of_consciousness,
+            `1` = "< 5 sec",
+            `2` = "5 sec - < 1 min",
+            `3` = "1 - 5 min",
+            `4` = "> 5 min",
+            .default = NA_character_,
+            .missing = NA_character_
+        ),
+        post_traumatic_seizure = as.logical(post_traumatic_seizure),
+        duration_post_traumatic_seizure = recode(
+            duration_post_traumatic_seizure,
+            `1` = "< 1 min",
+            `2` = "1 - < 5 min",
+            `3` = "5 - `5 min",
+            `4` = "> 15 min",
+            .default = NA_character_,
+            .missing = NA_character_
+        ),
+        acting_normally = as.logical(acting_normally),
+        headache_verb = recode(
+            headache_verb,
+            `0` = "No",
+            `1` = "Yes",
+            `91` = "Pre-verbal/Non-verbal",
+            .default = NA_character_,
+            .missing = NA_character_
+        ), 
+        vomit = as.logical(vomit),
+        dizzy = as.logical(dizzy),
+
+        gcs_eye = recode(
+            gcs_eye,
+            `1` = "None",
+            `2` = "Pain",
+            `3` = "Verbal",
+            `4` = "Spontaneous",
+            .default = NA_character_,
+            .missing = NA_character_
+        ),
+        gcs_verb = recode(
+            gcs_verb,
+            `1` = "None",
+            `2` = "Incomprehensible sounds (moans)",
+            `3` = "Inappropriate words(cries to pain)",
+            `4` = "Confused (irritable/cries)",
+            `5` = "Oriented (coos/babbles)",
+            .default = NA_character_,
+            .missing = NA_character_
+        ),
+        gcs_motor = recode(
+            gcs_motor,
+            `1` = "None",
+            `2` = "Abnormal extension posturing",
+            `3` = "Abnormal flexure posituring",
+            `4` = "Withdraws to pain",
+            `5` = "Localizes pain (withdraws to touch)",
+            `6` = "Follow commands (spontaneous movement)",
+            .default = NA_character_,
+            .missing = NA_character_
+        ),
+        altered_mental_status = as.logical(altered_mental_status),
+        palpable_skull_fracture = recode(
+            palpable_skull_fracture,
+            `0` = "No",
+            `1` = "Yes",
+            `2` = "Unclear exam",
+            .default = NA_character_,
+            .missing = NA_character_
+        ), 
+        fontanelle_bulging = recode(
+            fontanelle_bulging,
+            `0` = "No/Closed",
+            `1` = "Yes",            
+            .default = NA_character_,
+            .missing = NA_character_
+        ), 
+        scalp_hematoma = as.logical(scalp_hematoma),
+        clavicle_trauma = as.logical(clavicle_trauma),
+        neuro_defect = as.logical(neuro_defect),
+        other_substantial_injure = as.logical(other_substantial_injure),
+        ct_form_filled = as.logical(ct_form_filled),
+        gender = recode(
+            gender,            
+            `1` = "Male",
+            `2` = "Female",
+            .default = NA_character_,
+            .missing = NA_character_
+        ),
+        ct_done = as.logical(ct_done),
+        death_due_to_tbi = as.logical(death_due_to_tbi),
+        citbi_final = as.logical(citbi_final)
+    )
+
 
 ```
 
