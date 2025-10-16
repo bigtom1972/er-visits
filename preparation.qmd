@@ -72,9 +72,6 @@ citbi_ren <- citbi_na |>
         death_due_to_tbi = DeathTBI,
         citbi_final = PosIntFinal
 
-
-
-
     )
 ```
 ### 3. Specify Variable Types:
@@ -317,7 +314,7 @@ citbi_grouped |>
 
 ```{r}
 citbi_gcs_age <- citbi_update |>
-    mutate(age_in_year = age_in_month %%12) |>
+    mutate(age_in_year = age_in_month %/%12) |>
     select(age_in_year, gcs_total, citbi_final)
 
 print(citbi_gcs_age)
@@ -350,7 +347,7 @@ citbi_gcs_age |>
 * c. Create a stacked bar chart that shows the number of patients with ciTBI across age faceted by total GCS score.
 
 ```{r}
-citbi_gcs_age |>
+citbi_gcs_age |>    
     ggplot(aes(x = factor(age_in_year), fill = citbi_final)) +
     geom_bar(position = "stack") +
     facet_wrap(~ gcs_total) +
