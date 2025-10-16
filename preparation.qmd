@@ -350,7 +350,7 @@ citbi_gcs_age |>
 citbi_gcs_age |>    
     ggplot(aes(x = factor(age_in_year), fill = citbi_final)) +
     geom_bar(position = "stack") +
-    facet_wrap(~ gcs_total) +
+    facet_wrap(~ gcs_total, scales = "free") +
     labs(title = "Count of ciTBI by Age, Faceted by GCS", x = "Age (Years)", y = "Count") +
     theme_minimal()
 ```
