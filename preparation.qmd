@@ -10,6 +10,7 @@ format: typst
 library(tidyverse)
 library(readr)
 library(dplyr)
+library(ggplot2)
 
 # Load CSV to R.
 work_dir <- "/home/robot/rlab/er-visits/"
@@ -24,7 +25,7 @@ spec(citbi)
 
 ## Part I: Data Cleaning
 
-Address Missing Data:
+### 1. Address Missing Data:
 
 • How is missing data being represented? Hint: Look at the data dictionary.
 • Notice that some columns have a special 91 value that indicates a pre-verbal patients (children who
@@ -37,7 +38,7 @@ citbi_na <- read_csv("data/citbi.csv", na = c("91", "92", "NA"))
 ```
 
 
-2. Change Variable Names:
+### 2. Change Variable Names:
 • Consider changing variable names. For example, names like “Clav” are unclear. A better name could
 be “clavicle_trauma”.
 
@@ -76,7 +77,7 @@ citbi_ren <- citbi_na |>
 
     )
 ```
-3. Specify Variable Types:
+### 3. Specify Variable Types:
 • Identify character, logical, and numeric vectors. Convert data types where appropriate.
     * amnesia_verb : logical/character? 
     * duration_loss_of_consciousness:  character
@@ -111,102 +112,126 @@ citbi_ren <- citbi_na |>
 ```{r}
 citbi_update <- citbi_ren |>
     mutate(
-        amnesia_verb = recode(
-            amnesia_verb,
-            `0` = "No",
-            `1` = "Yes",
-            `91` = "Pre-verbal/Non-verbal",
-            .default = NA_character_,
-            .missing = NA_character_
+        amnesia_verb = as.factor(
+            recode(
+                amnesia_verb,
+                `0` = "No",
+                `1` = "Yes",
+                `91` = "Pre-verbal/Non-verbal",
+                .default = NA_character_,
+                .missing = NA_character_
+            )            
         ),        
-        duration_loss_of_consciousness = recode(
-            duration_loss_of_consciousness,
-            `1` = "< 5 sec",
-            `2` = "5 sec - < 1 min",
-            `3` = "1 - 5 min",
-            `4` = "> 5 min",
-            .default = NA_character_,
-            .missing = NA_character_
+        duration_loss_of_consciousness = as.factor(
+            factor(
+                recode(
+                    duration_loss_of_consciousness,
+                    `1` = "< 5 sec",
+                    `2` = "5 sec - < 1 min",
+                    `3` = "1 - 5 min",
+                    `4` = "> 5 min",
+                    .default = NA_character_,
+                    .missing = NA_character_
+                ),
+                levels = c("< 5 sec", "5 sec - < 1 min", "1 - 5 min","> 5 min"), 
+                ordered = TRUE,
+            )
         ),
         post_traumatic_seizure = as.logical(post_traumatic_seizure),
-        duration_post_traumatic_seizure = recode(
-            duration_post_traumatic_seizure,
-            `1` = "< 1 min",
-            `2` = "1 - < 5 min",
-            `3` = "5 - `5 min",
-            `4` = "> 15 min",
-            .default = NA_character_,
-            .missing = NA_character_
+        duration_post_traumatic_seizure = as.factor(
+            recode(
+                duration_post_traumatic_seizure,
+                `1` = "< 1 min",
+                `2` = "1 - < 5 min",
+                `3` = "5 - `5 min",
+                `4` = "> 15 min",
+                .default = NA_character_,
+                .missing = NA_character_
+            )
         ),
         acting_normally = as.logical(acting_normally),
-        headache_verb = recode(
-            headache_verb,
-            `0` = "No",
-            `1` = "Yes",
-            `91` = "Pre-verbal/Non-verbal",
-            .default = NA_character_,
-            .missing = NA_character_
+        headache_verb = as.factor(
+            recode(
+                headache_verb,
+                `0` = "No",
+                `1` = "Yes",
+                `91` = "Pre-verbal/Non-verbal",
+                .default = NA_character_,
+                .missing = NA_character_
+            )
         ), 
         vomit = as.logical(vomit),
         dizzy = as.logical(dizzy),
 
-        gcs_eye = recode(
-            gcs_eye,
-            `1` = "None",
-            `2` = "Pain",
-            `3` = "Verbal",
-            `4` = "Spontaneous",
-            .default = NA_character_,
-            .missing = NA_character_
+        gcs_eye = as.factor(
+            recode(
+                gcs_eye,
+                `1` = "None",
+                `2` = "Pain",
+                `3` = "Verbal",
+                `4` = "Spontaneous",
+                .default = NA_character_,
+                .missing = NA_character_
+            )
         ),
-        gcs_verb = recode(
-            gcs_verb,
-            `1` = "None",
-            `2` = "Incomprehensible sounds (moans)",
-            `3` = "Inappropriate words(cries to pain)",
-            `4` = "Confused (irritable/cries)",
-            `5` = "Oriented (coos/babbles)",
-            .default = NA_character_,
-            .missing = NA_character_
+        gcs_verb = as.factor(
+            recode(
+                gcs_verb,
+                `1` = "None",
+                `2` = "Incomprehensible sounds (moans)",
+                `3` = "Inappropriate words(cries to pain)",
+                `4` = "Confused (irritable/cries)",
+                `5` = "Oriented (coos/babbles)",
+                .default = NA_character_,
+                .missing = NA_character_
+            )
         ),
-        gcs_motor = recode(
-            gcs_motor,
-            `1` = "None",
-            `2` = "Abnormal extension posturing",
-            `3` = "Abnormal flexure posituring",
-            `4` = "Withdraws to pain",
-            `5` = "Localizes pain (withdraws to touch)",
-            `6` = "Follow commands (spontaneous movement)",
-            .default = NA_character_,
-            .missing = NA_character_
+        gcs_motor = as.factor(
+            recode(
+                gcs_motor,
+                `1` = "None",
+                `2` = "Abnormal extension posturing",
+                `3` = "Abnormal flexure posituring",
+                `4` = "Withdraws to pain",
+                `5` = "Localizes pain (withdraws to touch)",
+                `6` = "Follow commands (spontaneous movement)",
+                .default = NA_character_,
+                .missing = NA_character_
+            )
         ),
         altered_mental_status = as.logical(altered_mental_status),
-        palpable_skull_fracture = recode(
-            palpable_skull_fracture,
-            `0` = "No",
-            `1` = "Yes",
-            `2` = "Unclear exam",
-            .default = NA_character_,
-            .missing = NA_character_
+        palpable_skull_fracture = as.factor(
+            recode(
+                palpable_skull_fracture,
+                `0` = "No",
+                `1` = "Yes",
+                `2` = "Unclear exam",
+                .default = NA_character_,
+                .missing = NA_character_
+            )
         ), 
-        fontanelle_bulging = recode(
-            fontanelle_bulging,
-            `0` = "No/Closed",
-            `1` = "Yes",            
-            .default = NA_character_,
-            .missing = NA_character_
+        fontanelle_bulging = as.factor(
+            recode(
+                fontanelle_bulging,
+                `0` = "No/Closed",
+                `1` = "Yes",            
+                .default = NA_character_,
+                .missing = NA_character_
+            )
         ), 
         scalp_hematoma = as.logical(scalp_hematoma),
         clavicle_trauma = as.logical(clavicle_trauma),
         neuro_defect = as.logical(neuro_defect),
         other_substantial_injure = as.logical(other_substantial_injure),
         ct_form_filled = as.logical(ct_form_filled),
-        gender = recode(
-            gender,            
-            `1` = "Male",
-            `2` = "Female",
-            .default = NA_character_,
-            .missing = NA_character_
+        gender = as.factor(
+            recode(
+                gender,            
+                `1` = "Male",
+                `2` = "Female",
+                .default = NA_character_,
+                .missing = NA_character_
+            )
         ),
         ct_done = as.logical(ct_done),
         death_due_to_tbi = as.logical(death_due_to_tbi),
@@ -224,6 +249,137 @@ citbi_update <- citbi_ren |>
 
 ## Part II: Exploratory Data Analysis (EDA)
 
+
+### 4. Create a Missing Data Summary:
+
+• In Positron, navigate to the session tab in the top right where you can view a list of objects saved in
+your environment. Click the spreadsheet icon to the right of the data frame name you created in part I.
+You should be launched into a new tab with a split pane view. On one side, you will see mini-histograms
+of each variable along with the proportion of missing values. If you click onto the variables you can see
+some useful summary statistics. On the other pane, you can see the data frame itself.   
+• Now, create a table that summarizes the number and the proportion of missing values for each variable
+in the dataset. Does it match up with what you saw in the positron summary tab?
+
+
 ```{r}
 
+missing_table <- citbi_update |>    
+  summarise(
+    cnt_amnesia_verb_missing = sum(is.na(amnesia_verb)),
+    prop_amnesia_verb_missing = mean(is.na(amnesia_verb)),
+    cnt_duration_loss_of_consciousness_missing = sum(is.na(duration_loss_of_consciousness)),
+    prop_duration_loss_of_consciousness_missing = mean(is.na(duration_loss_of_consciousness)),
+    #Can add more lines of code to check missing values.
+  ) 
+
+print(missing_table)
+
 ```
+
+
+### 5. Create a histogram of the patient ages in months. Describe any interesting patterns you see.
+
+```{r}
+citbi_update |>
+ggplot(aes(x = age_in_month)) +
+  geom_histogram(binwidth = 5, fill = "gray", color = "black") +
+  labs(title = "Histogram of Patient Ages in Months", x = "Age (Months)", y = "Count") +
+  theme_minimal()
+
+# Yonger babies are more dangous to be injured?
+```
+
+### 6. Create a grouped summary table that shows the total count of patients for every combination of the loss of consciousness length and ciTBI outcome columns.
+
+```{r}
+citbi_grouped <- citbi_update |>
+    filter(!is.na(duration_loss_of_consciousness) & !is.na(citbi_final)) |>
+    group_by(duration_loss_of_consciousness, citbi_final) |>
+    summarise(count = n())
+
+print(citbi_grouped)
+```
+
+
+### 7. Create a bar chart to visualize the count for each category side-by-side in length of loss of consciousness by ciTBI outcome.
+
+```{r}
+citbi_grouped |> 
+    ggplot( aes(x = duration_loss_of_consciousness, y = count, fill = citbi_final )) +
+    geom_bar(stat = "identity", position = "dodge") +
+    labs(title = "Counts of Loss of Consciousness Length by ciTBI Outcome", x = "LOC Length", y = "Count") +
+    theme_minimal()
+```
+
+
+
+### 8. TTe variable (originally) named “GCSTotal” refers to the Glasgow Coma Scale (GCS) score, a neurological assessment used to evaluate the patient’s level of consciousness. Create three visualizations for the relationship between total GCS score, Age in years, and ciTBI outcome.
+
+```{r}
+citbi_gcs_age <- citbi_update |>
+    mutate(age_in_year = age_in_month %%12) |>
+    select(age_in_year, gcs_total, citbi_final)
+
+print(citbi_gcs_age)
+
+```
+
+* a. Create a stacked normalized bar chart to visualize how the proportion of patients with ciTBI varies
+across diﬀerent ages.
+
+```{r}
+citbi_gcs_age |>    
+    ggplot(aes(x = factor(age_in_year), fill = citbi_final)) +
+        geom_bar(position = "fill") +
+        labs(title = "Proportion of ciTBI by Age in Years", x = "Age (Years)", y = "Proportion") +
+        theme_minimal()
+```
+
+* b. Explore whether the relationship between age and ciTBI diﬀers across Glasgow Coma Scale scores. Create a stacked normalized bar chart that shows the proportion of patients with ciTBI across age,
+now faceted by total GCS score.
+
+```{r}
+citbi_gcs_age |>
+    ggplot(aes(x = factor(age_in_year), fill = citbi_final)) +
+    geom_bar(position = "fill") +
+    facet_wrap(~ gcs_total) +
+    labs(title = "Proportion of ciTBI by Age, Faceted by GCS", x = "Age (Years)", y = "Proportion") +
+    theme_minimal()
+```
+
+* c. Create a stacked bar chart that shows the number of patients with ciTBI across age faceted by total GCS score.
+
+```{r}
+citbi_gcs_age |>
+    ggplot(aes(x = factor(age_in_year), fill = citbi_final)) +
+    geom_bar(position = "stack") +
+    facet_wrap(~ gcs_total) +
+    labs(title = "Count of ciTBI by Age, Faceted by GCS", x = "Age (Years)", y = "Count") +
+    theme_minimal()
+```
+
+
+
+### 9. Create a scatter plot to visualize any two numeric variables in the dataset. Describe any interesting patterns you see.
+
+```{r}
+citbi_update |>
+    ggplot(aes(x = age_in_month, y = gcs_total)) +
+    geom_point(alpha = 0.5) +
+    labs(title = "Scatter Plot: Age in Months vs. GCS Total", x = "Age (Months)", y = "GCS Total") +
+    theme_minimal()
+```
+
+
+### 10. Create a table that summarizes at least two statistics grouped by two categorical variables. Describe any interesting patterns you see.
+
+```{r}
+citbi_grouped <- citbi_update |>
+    filter(!is.na(duration_loss_of_consciousness) & !is.na(citbi_final)) |>
+    group_by(duration_loss_of_consciousness, citbi_final) |>
+    summarise(count = n())
+
+print(citbi_grouped)
+
+```
+
