@@ -1,0 +1,152 @@
+# dates and times I
+
+The next few questions reference the moment that the ball fully dropped in Times Square in New York
+City at the ffrst moment of the new year in 2000. The corresponding UNIX time was 946684800. Please
+form a vector to captures this point in time in several different ways. Remember you may need to look at
+function help ffles to learn more about how the functions taught in class work.
+
+
+```{r}
+#1. Using baseR and the Unix timepoint.
+millennium <- as.POSIXct(x = 946684800, tz ="America/New_York")
+str(millennium)
+dput(millennium)
+millennium <- as.POSIXct(x = 946684800, tz ="UTC")
+str(millennium)
+dput(millennium)
+#2. Using baseR and a string that expresses the timepoint in a format similar to "2025-10-10 13:00:00".
+millennium <- as.POSIXct(x = "2000-01-01 01:00:00", tz = "UTC")
+str(millennium)
+dput(millennium)
+#3. Using baseR and a string that expresses the timepoint in a format similar to "Oct 10, 2025 1:00 pm".
+millennium<-as.POSIXct(x ="Jan 01, 2000 01:00 am", tz ="UTC", format = "%b %d, %Y %I:%M %p")
+str(millennium)
+dput(millennium)
+#4. Using lubridate and a string that expresses the timepoint in a format similar to "2025-10-10 13:00:00".
+library(lubridate)
+millennium<-ymd_hms("2000-01-01 00:00:00", tz ="UTC")
+dput(millennium)
+#5. Using lubridate and a string that expresses the timepoint in a format similar to "Oct 10, 2025 1:00 pm".
+millennium <- mdy_hm("Jan 01, 2000 1:00 am")
+dput(millennium)
+
+#6. What is the type of the objects created by the different commands used above?
+typeof(millennium)
+class(millennium)
+# double vector, class POSIXct.
+```
+
+Each of the following questions should be answered with an R command.
+
+```{r}
+library(lubridate)
+#7. What day of the week were you born on?
+my_birthday <- "1972-08-31"
+dt_birthday <- as.POSIXct(my_birthday)
+wday(dt_birthday, label = TRUE, abbr = FALSE)
+dt_birthday <- ymd("1972/08/31")
+wday(dt_birthday)
+
+
+
+#8. The ffrst day of classes this semester fell on which week of the current year?
+week(ymd("2025-8-27"))
+#9. In which year will Unix time cross the 2 trillion second mark?
+f <- as.POSIXct(x = 2e12, tz = "UTC")
+dput(f)
+year(as.POSIXct(x = 2e12, tz = "UTC"))
+
+#10. What is the precise date and time at which that milestone will occur?
+print(as.POSIXct(x= 2000000000000, tz = "UTC"))
+```
+
+Dates and Times II
+
+Using the notions of durations, periods, and timezones from lubridate, provide the code and output to
+answer the following questions.
+
+```{r}
+#11. How old are you? Answer as a duration.
+library(lubridate)
+my_birthday <- as.Date("1972-8-31")
+my_age_d <- as.duration(today() - my_birthday)
+my_age_d
+
+#12. How old will you be in one month? Answer both using durations and periods.
+my_age_d + dmonths(1)
+as.period(my_age_d) + months(1)
+#13. What time is it now? Answer using the now() function in lubridate and answer in HH:MM:SS and provide the timezone.
+format(now(), "%H:%M:%S %Z")
+
+#14. What is the current time in UTC (that is to say, in London)?
+with_tz(now(), tzone = "Europe/London")	
+#15. Now imagine you call your friend right now in Delhi, India and ask them to do the same on their phone. What will they say? (in HH:MM:SS with timezone).
+
+
+```
+
+These exercises will be easiest done iteratively in R. You can copy your answers back here or produce your problem set document using Quarto directly. The data set at hand is called flights inside the nycflights package.
+
+```{r}
+library(dplyr)
+
+library(lubridate) # this is also in library(tidyverse)
+
+library(nycflights13) # install this if you don't have it
+
+flights 
+
+# 16. Start by reading the documention for the data frame. What is the unit of observation? What time span and geography is covered by this data? Which time zones are any time columns recorded in?
+# The unit of the observation is the data of each flight in one specific day.
+# Time Span:  air_time, dep_delay, arr_delay              and distance,  col time_hour‘s type is POSIXct, TZ is recorded in.
+str(flights$time_hour)
+tmz <- attr(flights$time_hour, "tzone")
+#17. Using year, month, day, and the integer clock times sched_dep_time and dep_time (HHMM)1, add two more variables to your data frame:
+
+
+#i. sched_dep_ts: the scheduled departure timestamp.
+#ii. dep_ts: the actual wheels-off timestamp
+#Both must be POSIXct in the “America/New_York” time zone.
+
+flights_1 <- flights |>
+    mutate(
+            sched_dep_ts=as.POSIXct(str_c(year, month, day, sprintf("%04d", sched_dep_time), sep = " "), format = "%Y %m %d %H%M", tz =tmz),
+            dep_ts  = as.POSIXct(str_c(year, month, day, sprintf("%04d", dep_time), sep=" "), format = "%Y %m %d %H%M", tz = tmz)            
+        )
+
+print(flights_1)
+
+# 18. Calculate the actual wheels-off timestamp in two additional ways and store them as additional variables in your data frame:
+# i. dep_ts_dur: add to sched_dep_ts the recorded time span of the departure delay as a duration.
+# ii. dep_ts_per: add to sched_dep_ts the recorded time span of the departure delay as a period.
+#In general do the different approaches align? How about if you look at the precise edge of a switch to/from Daylight Savings Time?
+
+flights_2 <- flights_1 |>
+    mutate (
+        dep_ts_dur = dminutes(dep_delay),
+        dep_ts_per = minutes(dep_delay)
+    )
+
+print(flights_2)
+
+flights_2$dep_ts_dur[100]
+flights_2$dep_ts_per[100]
+#In general, the different approaches align.
+#Edge of Daylight Savings Time:
+
+flights_2 |>
+   filter(month == 3, day == 8 | day == 9, sched_dep_time > 2300) |>
+   select(dep_ts_dur, dep_ts_per, sched_dep_time, dep_time, day, month, dep_delay, sched_dep_ts, dep_ts) |>
+   mutate(cal_dep_ts = sched_dep_ts + dep_ts_dur)
+# The calculation of dur or per based on sched_dep_ts, dep_ts are not correct.  (Not only related to edge of daylight saving, but to time span days.)
+
+
+
+
+
+
+```
+
+
+
+
