@@ -91,6 +91,7 @@ These exercises will be easiest done iteratively in R. You can copy your answers
 library(dplyr)
 
 library(lubridate) # this is also in library(tidyverse)
+library(stringr)
 
 library(nycflights13) # install this if you don't have it
 
@@ -115,6 +116,9 @@ flights_1 <- flights |>
         )
 
 print(flights_1)
+
+
+
 
 # 18. Calculate the actual wheels-off timestamp in two additional ways and store them as additional variables in your data frame:
 # i. dep_ts_dur: add to sched_dep_ts the recorded time span of the departure delay as a duration.
@@ -141,12 +145,59 @@ flights_2 |>
 # The calculation of dur or per based on sched_dep_ts, dep_ts are not correct.  (Not only related to edge of daylight saving, but to time span days.)
 
 
+#19. Challenge: Construct scheduled and realized arrival timestamps using only columns in ffights. Build sched_arr_ts from year, month, day, and sched_arr_time (HHMM) in “America/New_York”. 
+flights |> 
+    mutate(sched_arr_ts = as.POSIXct(str_c(year, month, day, sprintf("%04d", sched_arr_time), sep = " "), format = "%Y %m %d %H%M", tz ="America/New_York"))
+
+
+# For red-eyes that arrive affer midnight local time, sched_arr_time may be smaller than sched_dep_time. Correct the date by adding a day to sched_arr_ts when needed.
+flights_3 <- flights_2 |>
+   mutate (sched_arr_ts = case_when(  
+                   sched_arr_time <= sched_dep_time ~ as.POSIXct(str_c(year, month, day, sprintf("%04d", sched_arr_time), sep = " "), format = "%Y %m %d %H%M", tz = "America/New_York") + days(1),
+                   TRUE ~ as.POSIXct(str_c(year, month, day, sprintf("%04d", sched_arr_time), sep = " "), format = "%Y %m %d %H%M", tz = "America/New_York") 
+   )
+ )
+
+# Do the analogous construction for actual arr_ts from arr_time.
+flights_4 <- flights_3 |>
+   mutate (arr_ts = case_when(  
+                   arr_time <= sched_dep_time ~ as.POSIXct(str_c(year, month, day, sprintf("%04d", arr_time), sep = " "), format = "%Y %m %d %H%M", tz = "America/New_York") + days(1),
+                   TRUE ~ as.POSIXct(str_c(year, month, day, sprintf("%04d", arr_time), sep = " "), format = "%Y %m %d %H%M", tz = "America/New_York") 
+   )
+ )
+
+str(flights_4)
+
+
+#Then compute:
+# • sched_block = as.duration(sched_arr_ts - sched_dep_ts)
+# • actual_block = as.duration(arr_ts - dep_ts)
+
+flights_4 |>
+    mutate(
+        sched_block = as.duration(sched_arr_ts - sched_dep_ts),
+        actual_block=as.duration(arr_ts - (sched_dep_ts + dep_ts_dur))
+    )     |>
+    select(sched_block, actual_block) |>
+    mutate( diff_block = actual_block - sched_block) |>
+    summarise(md = median(diff_block, na.rm = TRUE))
+
+
+
+# Report the median difference actual_block - sched_block in minutes.
+
+
 
 
 
 
 ```
 
+```{r}
+
+
+
+```
 
 
 
